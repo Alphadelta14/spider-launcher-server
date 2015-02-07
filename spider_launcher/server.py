@@ -1,10 +1,20 @@
 
+import functools
+import itertools
 import os
 from time import time as now
 try:
     from http.server import BaseHTTPRequestHandler
+    iterbytes = iter
+
+    def write_(obj, data):
+        obj.write(bytes(data, 'utf-8'))
 except ImportError:
     from BaseHTTPServer import BaseHTTPRequestHandler
+    iterbytes = functools.partial(itertools.imap, ord)
+
+    def write_(obj, data):
+        obj.write(data)
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
@@ -33,10 +43,10 @@ class SpiderLauncherServer(BaseHTTPRequestHandler):
             self.end_headers()
             return
         elif path == '/':
-            with open(os.path.join(DATA_DIR, 'LoadCode.dat')) as handle:
+            with open(os.path.join(DATA_DIR, 'LoadCode.dat'), 'rb') as handle:
                 data = handle.read()
             escaped_code = ''
-            data = list(data)  # mutable
+            data = list(iterbytes(data))  # mutable
             if 'file' in query:
                 if len(query['file']) > 32:
                     self.send_error(400, 'Invalid file specified')
@@ -46,15 +56,15 @@ class SpiderLauncherServer(BaseHTTPRequestHandler):
                 filename = 'code.bin'
             ofs = LOAD_CODE_FNAME_START + len('dmc:/')*2
             for char in filename:
-                data[ofs] = char
+                data[ofs] = ord(char)
                 ofs += 2
-            data[ofs] = '\x00'
-            data[ofs+1] = '\x00'
+            data[ofs] = 0
+            data[ofs+1] = 0
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.send_header('Last-Modified', self.date_time_string(now()))
             for char in data:
-                escaped_code += '\\u{0:04x}'.format(ord(char))
+                escaped_code += '\\u{0:04x}'.format(char)
             response_text = '''<html>
 <head>
 <style>
@@ -91,7 +101,7 @@ class SpiderLauncherServer(BaseHTTPRequestHandler):
 </html>''' % (escaped_code, filename)
             self.send_header('Content-Length', len(response_text))
             self.end_headers()
-            self.wfile.write(response_text)
+            write_(self.wfile, response_text)
             return
         elif path == '/frame.html':
             self.send_response(200)
@@ -126,7 +136,7 @@ class SpiderLauncherServer(BaseHTTPRequestHandler):
 </html>'''
             self.send_header('Content-Length', len(response_text))
             self.end_headers()
-            self.wfile.write(response_text)
+            write_(self.wfile, response_text)
             return
         self.send_error(404, "File not found")
         return 'hello world'
