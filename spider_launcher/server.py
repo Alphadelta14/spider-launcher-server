@@ -7,6 +7,8 @@ except ImportError:
 
 
 class SpiderLauncherServer(BaseHTTPRequestHandler):
+    server_version = 'Spider Launcher/1.0'
+
     def do_GET(self):
         print('GET', self.path)
         if not self.path:
