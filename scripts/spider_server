@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+
+try:
+    from http.server import HTTPServer
+except ImportError:
+    from BaseHTTPServer import HTTPServer
+
+from spider_launcher.server import SpiderLauncherServer
+
+server_address = ('', 8000)
+httpd = HTTPServer(server_address, SpiderLauncherServer)
+httpd.serve_forever()
