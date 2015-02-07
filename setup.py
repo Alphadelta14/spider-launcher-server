@@ -9,4 +9,7 @@ setup(name='spider-launcher',
       license='MIT',
       packages=['spider_launcher'],
       scripts=['scripts/spider_server'],
+      data_files=[
+          ('data', ['LoadCode.dat'])
+      ],
       zip_safe=False)
